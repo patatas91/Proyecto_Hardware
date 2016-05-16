@@ -1,0 +1,503 @@
+   1              	# 1 "../init_b.asm"
+   1              	.text
+   0              	
+   0              	
+   0              	
+   2              	#        ENTRY                  /*  mark the first instruction to call */
+   3              	.global start
+   4              	.global sudoku_recalcular_arm
+   5              	.global sudoku_candidatos_thumb
+   6              	.global sudoku_candidatos_arm
+   7              	start:
+   8              	.arm /*indicates that we are using the ARM instruction set */
+   9              	#------standard initial code
+  10              	# --- Setup interrupt / exception vectors
+  11 0000 FFFFFFEA 	      B       Reset_Handler
+  12              	/* In this version we do not use the following handlers */
+  13              	###################################################################################################
+  14              	#-----------Undefined_Handler:
+  15              	#      B       Undefined_Handler
+  16              	#----------SWI_Handler:
+  17              	#      B       SWI_Handler
+  18              	#----------Prefetch_Handler:
+  19              	#      B       Prefetch_Handler
+  20              	#----------Abort_Handler:
+  21              	#      B       Abort_Handler
+  22              	#         NOP      /* Reserved vector */
+  23              	#----------IRQ_Handler:
+  24              	#      B       IRQ_Handler
+  25              	#----------FIQ_Handler:
+  26              	#      B       FIQ_Handler
+  27              	###################################################################################################
+  28              	# Reset Handler:
+  29              	# the processor starts executing this code after system reset
+  30              	###################################################################################################
+  31              	Reset_Handler:
+  32              	#
+  33 0004 01D9A0E3 	        MOV     sp, #0x4000      /*  set up stack pointer (r13) */
+  34              	#
+  35              	#  USING A .C FUNCTION
+  36              	#
+  37              	# FUNCTION CALL the parameters are stored in r0 and r1
+  38              	# If there are 4 or less parameters when calling a C function the compiler assumes that they have
+  39              	# been stored in r0-r3. If there are more parameters you have to store them in the data stack using
+  40              	# function __c_copy is in copy.c
+  41 0008 3C019FE5 	        LDR     r0, =cuadricula  /*  puntero a la cuadricula */
+  42              	
+  43              	.extern     sudoku9x9
+  44 000c 3C519FE5 	        ldr         r5, = sudoku9x9
+  45 0010 0FE0A0E1 	        mov         lr, pc
+  46 0014 15FF2FE1 	        bx          r5
+  47              	
+  48              	stop:
+  49 0018 FEFFFFEA 	        B       stop        /*  end of program */
+  50              	
+  51              	.arm
+  52              	
+  53              	
+  54              	//////////////////////////////////////////////////////////////////////
+  55              	// La función comienza con el parametros cuadricula en el registro r0:
+  56              	// r0=posicion inicial cuadricula
+  57              	// La funcion recorre todas las filas y columnas llamando con cada celda
+  58              	// a la funcion candidatos[x,y].
+  59              	// Ademas, realiza un conteo de las celdas vacias.
+  60              	// Una vez finalizada la ejecución obtendremos el valor de las celdas
+  61              	// vacias en el registro r3.
+  62              	// r3=celdas vacias
+  63              	//////////////////////////////////////////////////////////////////////
+  64              	sudoku_recalcular_arm:
+  65 001c 0DC0A0E1 	        mov ip, sp
+  66 0020 F0DF2DE9 	        STMDB sp!, {r4-r10, fp, ip, lr, pc}
+  67 0024 04B04CE2 	        sub fp, ip, #4
+  68              	        // sub sp, #EspacioVariablesLocales
+  69 0028 0030A0E3 	        mov r3, #0                //r3=celdas_vacias
+  70 002c 0010A0E3 	        mov r1, #0                //i (filas)
+  71              	bucle_i:
+  72 0030 0020A0E3 	        mov r2, #0                //j (columnas)
+  73              	bucle_j:
+  74 0034 0F002DE9 	        STMFD sp!, {r0-r3}
+  75 0038 FEFFFFEB 	        bl sudoku_candidatos_arm
+  76              	        //bl sudoku_candidatos_thumb
+  77              	
+  78 003c 000050E3 	        cmp r0, #0                //r0=valor cuadricula[x,y]
+  79 0040 0F00BDE8 	        LDMFD sp!, {r0-r3}
+  80 0044 01308302 	        addeq r3, r3, #1        //if(valor==0) celdas_vacias=celdas_vacias+1
+  81              	
+  82              	
+  83 0048 012082E2 	        add r2, r2, #1            //j=j+1
+  84 004c 090052E3 	        cmp r2, #9
+  85 0050 F7FFFF1A 	        bne bucle_j                //if(j!=9) salto a bucle_j
+  86              	
+  87 0054 011081E2 	        add r1, r1, #1            //i=i+1
+  88 0058 090051E3 	        cmp r1, #9
+  89 005c F3FFFF1A 	        bne bucle_i                //if(i!=9) salto a bucle_i
+  90              	
+  91 0060 F0AF1BE9 	        LDMDB fp, {r4-r10, fp, sp, pc}
+  92 0064 1EFF2FE1 			bx r14
+  93              	
+  94              	
+  95              	
+  96              	#SUDOKU_CANDIDATOS_ARM
+  97              	//////////////////////////////////////////////////////////////////////
+  98              	// La función comienza con los parametros en los siguientes registros:
+  99              	// r0=posicion inicial cuadricula
+ 100              	// r1=fila
+ 101              	// r2=columna
+ 102              	// La funcion rellena los candidatos de la celda [x,y] en los 9 bits de
+ 103              	// menor signo con 0s.
+ 104              	// Una vez finalizada la ejecución devolvemos el valor de la celda en
+ 105              	// el registro r0:
+ 106              	// r0=valor celda
+ 107              	//////////////////////////////////////////////////////////////////////
+ 108              	sudoku_candidatos_arm:
+ 109              	        //r0=cuadricula
+ 110              	        //r1=x
+ 111              	        //r2=y
+ 112              	        //r3=celda
+ 113              	        //r4=candidatos
+ 114              	        //r5=i
+ 115              	        //r6=1
+ 116 0068 0030A0E3 	        mov r3, #0                    //r3=valor celda
+ 117 006c 0040A0E3 	        mov r4, #0                     //candidatos=0000 0000 0000 0000
+ 118 0070 0050A0E3 	        mov r5, #0                     //i=0
+ 119 0074 0160A0E3 	        mov r6, #1                    //r6=1 (utilizado para escritura nuevo candidato)
+ 120              	
+ 121              	        //Bucle fila
+ 122              	b_fila:
+ 123 0078 8132A0E1 	        mov r3, r1, LSL #5            //Desplazamiento en fila
+ 124 007c 853083E0 	        add r3, r3, r5, LSL #1        //Desplazamiento en columna
+ 125              	
+ 126 0080 B33090E1 	        LDRH r3, [r0, r3]            //r3=Media palabra contenida en [r0+r3]
+ 127 0084 4336B0E1 	        ASRS r3, #12                //r3=Primer byte de la palabra contenida en [r0+r3] (numero)
+ 128              	                                    //Si r3!=0
+ 129 0088 01304312 	        SUBNE r3, #1                //Restamos 1 a r3 para igualar con el indice de candidatos
+ 130 008c 1633A011 	        MOVNE r3, r6, LSL r3        //Calculamos el desplazamiento del bit en candidatos
+ 131 0090 03408411 	        ORRNE r4, r4, r3            //Añadimos el nuevo candidato a los candidatos calculados.
+ 132              	                                    //r4=r4 OR r3
+ 133              	
+ 134 0094 015085E2 	        add r5, r5, #1                //i=i+1
+ 135 0098 090055E3 	        cmp r5, #9                    //Comparamos i con 9
+ 136 009c F5FFFF1A 	        bne b_fila                    //if(i!=9) salto a b_fila
+ 137              	
+ 138              	        //Bucle columna
+ 139 00a0 0050A0E3 	        mov r5, #0
+ 140              	b_col:
+ 141 00a4 8230A0E1 	        mov r3, r2, LSL #1            //Desplazamiento en columna
+ 142 00a8 853283E0 	        add r3, r3, r5, LSL #5        //Desplazamiento en fila
+ 143              	
+ 144 00ac B33090E1 	        LDRH r3, [r0, r3]            //r3=Media palabra contenida en [r0+r3]
+ 145 00b0 4336B0E1 	        ASRS r3, #12                //r3=Primer byte de la palabra contenida en [r0+r3] (numero)
+ 146              	                                    //Si r3!=0
+ 147 00b4 01304312 	        SUBNE r3, #1                //Restamos 1 a r3 para igualar con el indice de candidatos
+ 148 00b8 1633A011 	        MOVNE r3, r6, LSL r3        //Calculamos el desplazamiento del bit en candidatos
+ 149 00bc 03408411 	        ORRNE r4, r4, r3            //Añadimos el nuevo candidato a los candidatos calculados.
+ 150              	                                    //r4=r4 OR r3
+ 151              	
+ 152 00c0 015085E2 	        add r5, r5, #1                //i=i+1
+ 153 00c4 090055E3 	        cmp r5, #9
+ 154 00c8 F5FFFF1A 	        bne b_col                    //if(i!=9) salto a b_col
+ 155              	
+ 156 00cc 0030A0E3 	        mov r3, #0                    //Region_h=0
+ 157 00d0 0050A0E3 	        mov r5, #0                    //Region_v=0
+ 158              	        //Bucle region
+ 159 00d4 030051E1 	b_h:    cmp r1,r3
+ 160              	                                    //if(x>region_h)
+ 161 00d8 033083C2 	        addgt r3, #3                //region_h=region_h+3
+ 162 00dc FCFFFFCA 	        bgt b_h                        //salto a b_h
+ 163              	                                    //if(x<region_h)
+ 164 00e0 033043B2 	        sublt r3, #3                //region_h=region_h-3
+ 165              	
+ 166 00e4 050052E1 	b_v:    cmp r2, r5
+ 167              	                                    //if(x>region_v)
+ 168 00e8 035085C2 	        addgt r5, #3                //region_v=region_v+3
+ 169 00ec F8FFFFCA 	        bgt b_h                        //salto a b_h
+ 170              	                                    //if(x<region_v)
+ 171 00f0 035045B2 	        sublt r5, #3                //region_v=region_v-3
+ 172              	
+ 173 00f4 811280E0 	        add r1, r0, r1, LSL #5        //Desplazamiento en columna, r1 = r1 + x
+ 174 00f8 821081E0 	        add r1, r1, r2, LSL #1        //Desplazamiento en fila, r1 = r1 + y
+ 175              	
+ 176 00fc 850080E0 	        add r0, r0, r5, LSL #1        //Desplazamiento en columna, r0 = r0 + region_h
+ 177 0100 830280E0 	        add r0, r0, r3, LSL #5        //Desplazamiento en fila, r0 = r0 + region_v
+ 178              	
+ 179 0104 0350A0E3 	        mov r5, #3                    //i=3
+ 180 0108 0370A0E3 	        mov r7, #3                    //j=3
+ 181              	
+ 182              	buc_reg:
+ 183 010c B230D0E0 	        LDRH r3, [r0], #2            //r3=[r0]; r0=r0+2
+ 184 0110 4336B0E1 	        ASRS r3, #12                    //r3=Primer byte de la palabra contenida en [r0+r3] (numero
+ 185              	                                    //Si r3!=0
+ 186 0114 01304312 	        SUBNE r3, #1                //Restamos 1 a r3 para igualar con el indice de candidatos
+ 187 0118 1633A011 	        MOVNE r3, r6, LSL r3        //Calculamos el desplazamiento del bit en candidatos
+ 188 011c 03408411 	        ORRNE r4, r4, r3            //Añadimos el nuevo candidato a los candidatos calculados.
+ 189              	                                    //r4=r4 OR r3
+ 190 0120 015055E2 	        SUBS r5, r5, #1                //i=i-1
+ 191 0124 F8FFFF1A 	        BNE buc_reg                    //if(r5!=0) salto a buc_reg
+ 192 0128 0350A0E3 	        MOV r5, #3                    //if(r5==0) fila recorrida, reiniciamos contador
+ 193              	
+ 194 012c 017057E2 	        SUBS r7, r7, #1                //j=j-1 restamos uno al contador de filas
+ 195 0130 1A008012 	        ADDNE r0, r0, #26            //if(r7!=0) r0=r0+26 saltamos una fila de la cuadricula en el 
+ 196 0134 F4FFFF1A 	        BNE buc_reg                    //if(r7!=0)todas las filas recorridas, salimos del bucle
+ 197              	
+ 198 0138 B000D1E1 	        LDRH r0, [r1]                //Extraemos el valor de cuadricula[x,y]
+ 199 013c 040080E1 	        ORR r0, r0, r4                //Añadimos los candidatos a la celda
+ 200 0140 B000C1E1 	        STRH r0, [r1]                //Guardamos el nuevo valor de la celda con los candidatos
+ 201 0144 4006B0E1 	        ASRS r0, r0, #12            //r0=valor de la celda (numero celdas_vacias)
+ 202              	
+ 203 0148 1EFF2FE1 	        bx r14                        //Fin
+ 204              	/*
+ 205              	
+ 206              	#SUDOKU_CANDIDATOS_THUMB
+ 207              	//////////////////////////////////////////////////////////////////////
+ 208              	// La función comienza con los parametros en los siguientes registros:
+ 209              	// r0=posicion inicial cuadricula
+ 210              	// r1=fila
+ 211              	// r2=columna
+ 212              	// La funcion rellena los candidatos de la celda [x,y] en los 9 bits de
+ 213              	// menor signo con 0s.
+ 214              	// Una vez finalizada la ejecución devolvemos el valor de la celda en
+ 215              	// el registro r0:
+ 216              	// r0=valor celda
+ 217              	//////////////////////////////////////////////////////////////////////
+ 218              	sudoku_candidatos_thumb:
+ 219              	        str r0, [sp, #-4]!
+ 220              	        adr r0, T_start + 1
+ 221              	        bx r0
+ 222              	.thumb
+ 223              	
+ 224              	T_start:
+ 225              	        #Marco pila
+ 226              	        pop {r0}
+ 227              	        //push {registros, lr}
+ 228              	
+ 229              	         //r0=cuadricula
+ 230              	        //r1=x
+ 231              	        //r2=y
+ 232              	        //r3=celda
+ 233              	        //r4=candidatos
+ 234              	        //r5=i
+ 235              	        //r6=1
+ 236              	        mov r3, #0                    //r3=valor celda
+ 237              	        mov r4, #0                     //candidatos=0000 0000 0000 0000
+ 238              	        mov r5, #0                     //i=0
+ 239              	        mov r6, #1                    //r6=1 (utilizado para escritura nuevo candidato)
+ 240              	        mov r7, #0
+ 241              	
+ 242              	        //Bucle fila
+ 243              	b_fila:
+ 244              	        //mov r3, r1, LSL #5            //Desplazamiento en fila
+ 245              	        mov r3, r1
+ 246              	        lsl r3, r3, #5
+ 247              	        mov r7 , r5
+ 248              	        //add r3, r3, r5, LSL #1        //Desplazamiento en columna
+ 249              	        lsl r7, r7, #1
+ 250              	        add r3, r7
+ 251              	        //LDRH r3, [r0, r3]            //r3=Media palabra contenida en [r0+r3]
+ 252              	        ldrh r3, [r0, r3]
+ 253              	        //ASRS r3, #12                    //r3=Primer byte de la palabra contenida en [r0+r3] (nume
+ 254              	        asr r3, #12
+ 255              	        cmp r3, #0
+ 256              	        bne dif0fil
+ 257              	contfil:
+ 258              	        //add r5, r5, #1                //i=i+1
+ 259              	        add r5, r5, #1
+ 260              	        //cmp r5, #9
+ 261              	        cmp r5, #9
+ 262              	        //bne b_fila                    //if(i!=9) salto a b_fila
+ 263              	        bne b_fila
+ 264              	
+ 265              	        //Bucle columna
+ 266              	        //mov r5, #0
+ 267              	        mov r5, #0
+ 268              	b_col:
+ 269              	        //mov r3, r2, LSL #1            //Desplazamiento en columna
+ 270              	        mov r3, r2
+ 271              	        lsl r3, r3, #1
+ 272              	        mov r7 , r5
+ 273              	        //add r3, r3, r5, LSL #5        //Desplazamiento en fila
+ 274              	        lsl r7, r7, #5
+ 275              	        add r3, r7
+ 276              	        //LDRH r3, [r0, r3]            //r3=Media palabra contenida en [r0+r3]
+ 277              	        ldrh r3, [r0, r3]
+ 278              	        //ASRS r3, #12                    //r3=Primer byte de la palabra contenida en [r0+r3] (nume
+ 279              	        asr r3, #12
+ 280              	        cmp r3, #0
+ 281              	        bne dif0col
+ 282              	contcol:
+ 283              	        //add r5, r5, #1                //i=i+1
+ 284              	        add r5, r5, #1
+ 285              	        //cmp r5, #9
+ 286              	        cmp r5, #9
+ 287              	        //bne b_col                    //if(i!=9) salto a b_col
+ 288              	        bne b_col
+ 289              	
+ 290              	        //mov r3, #0                    //Region_h=0
+ 291              	        mov r3, #0
+ 292              	        //mov r5, #0                    //Region_v=0
+ 293              	        mov r5, #0
+ 294              	
+ 295              	        //Bucle region
+ 296              	b_h:    //cmp r1,r3
+ 297              	        cmp r1, r3
+ 298              	        bgt mayorh                            //if(x>region_h)
+ 299              	cont1:
+ 300              	        //bgt b_h                        //salto a b_h
+ 301              	        bgt b_h
+ 302              	        blt menorh                            //if(x<region_h)
+ 303              	b_v:    //cmp r2, r5
+ 304              	        cmp r2, r5
+ 305              	
+ 306              	        bgt mayorv                            //if(x>region_v)
+ 307              	cont2:
+ 308              	        bgt b_h                        //salto a b_h
+ 309              	        blt menorv                                 //if(x<region_v)
+ 310              	
+ 311              	cont3:
+ 312              	        //add r1, r0, r1, LSL #5        //Desplazamiento en columna, r1 = r1 + x
+ 313              	        lsl r1, r1, #5
+ 314              	        add r1, r0
+ 315              	        //add r1, r1, r2, LSL #1        //Desplazamiento en fila, r1 = r1 + y
+ 316              	        lsl r2, r2, #1
+ 317              	        add r1, r2
+ 318              	
+ 319              	        //add r0, r0, r5, LSL #1        //Desplazamiento en columna, r0 = r0 + region_h
+ 320              	        lsl r5, r5, #1
+ 321              	        add r0, r5
+ 322              	        //add r0, r0, r3, LSL #5        //Desplazamiento en fila, r0 = r0 + region_v
+ 323              	        lsl r3, r3, #5
+ 324              	        add r0, r3
+ 325              	
+ 326              	        //mov r5, #3                    //i=3
+ 327              	        mov r5, #3
+ 328              	        //mov r7, #3                    //j=3
+ 329              	        mov r7, #3
+ 330              	buc_reg:
+ 331              	        //LDRH r3, [r0], #2            //r3=[r0]; r0=r0+2
+ 332              	        ldrh r3, [r0]
+ 333              	        add r0, #2
+ 334              	        //ASRS r3, #12                    //r3=Primer byte de la palabra contenida en [r0+r3] (nume
+ 335              	        asr r3, #12
+ 336              	        cmp r3, #0
+ 337              	        bne dif0reg
+ 338              	contreg:
+ 339              	        //SUBS r5, r5, #1                //i=i-1
+ 340              	        sub r5, r5, #1
+ 341              	        cmp r5, #0
+ 342              	        //BNE buc_reg                    //if(r5!=0) salto a buc_reg
+ 343              	        bne buc_reg
+ 344              	        //MOV r5, #3                    //if(r5==0) fila recorrida, reiniciamos contador
+ 345              	        mov r5, #3
+ 346              	
+ 347              	        //SUBS r7, r7, #1                //j=j-1 restamos uno al contador de filas
+ 348              	        sub r7, r7, #1
+ 349              	        cmp r7, #0
+ 350              	        bne dif7
+ 351              	cont4:
+ 352              	        //BNE buc_reg                    //if(r7!=0)todas las filas recorridas, salimos del bucle
+ 353              	        bne buc_reg
+ 354              	
+ 355              	        //LDRH r0, [r1]                //Extraemos el valor de cuadricula[x,y]
+ 356              	        ldrh r0, [r1]
+ 357              	        //ORR r0, r0, r4                //Añadimos los candidatos a la celda
+ 358              	        orr r0, r4
+ 359              	        //STRH r0, [r1]                //Guardamos el nuevo valor de la celda con los candidatos
+ 360              	        strh r0, [r1]
+ 361              	        //ASRS r0, r0, #12            //r0=valor de la celda (numero celdas_vacias)
+ 362              	        asr r0, r0, #12
+ 363              	        bx r14                        //Fin
+ 364              	dif0fil:                                    //Si r3!=0
+ 365              	        //SUBNE r3, #1                //Restamos 1 a r3 para igualar con el indice de candidatos
+ 366              	        sub r3, #1
+ 367              	        //MOVNE r3, r6, LSL r3        //Calculamos el desplazamiento del bit en candidatos
+ 368              	        lsl r6, r3
+ 369              	        mov r3, r6
+ 370              	        mov r6, #1
+ 371              	        //ORRNE r4, r4, r3            //Añadimos el nuevo candidato a los candidatos calculados.
+ 372              	                                    //r4=r4 OR r3
+ 373              	        orr r4, r3
+ 374              	        b contfil
+ 375              	dif0col:                           //Si r3!=0
+ 376              	        //SUBNE r3, #1                //Restamos 1 a r3 para igualar con el indice de candidatos
+ 377              	        sub r3, #1
+ 378              	        //MOVNE r3, r6, LSL r3        //Calculamos el desplazamiento del bit en candidatos
+ 379              	        lsl r6, r3
+ 380              	        mov r3, r6
+ 381              	        mov r6, #1
+ 382              	        //ORRNE r4, r4, r3            //Añadimos el nuevo candidato a los candidatos calculados.
+ 383              	                                    //r4=r4 OR r3
+ 384              	        orr r4, r3
+ 385              	        b contcol
+ 386              	dif0reg:                             //Si r3!=0
+ 387              	        //SUBNE r3, #1                //Restamos 1 a r3 para igualar con el indice de candidatos
+ 388              	        sub r3, #1
+ 389              	        //MOVNE r3, r6, LSL r3        //Calculamos el desplazamiento del bit en candidatos
+ 390              	        lsl r6, r3
+ 391              	        mov r3, r6
+ 392              	        mov r6, #1
+ 393              	        //ORRNE r4, r4, r3            //Añadimos el nuevo candidato a los candidatos calculados.
+ 394              	                                    //r4=r4 OR r3
+ 395              	        orr r4, r3
+ 396              	        b contreg
+ 397              	mayorh:
+ 398              	        //addgt r3, #3                //region_h=region_h+3
+ 399              	        add r3, #3
+ 400              	        b cont1
+ 401              	menorh:
+ 402              	        //sublt r3, #3                //region_h=region_h-3
+ 403              	        sub r3, #3
+ 404              	        b b_v
+ 405              	mayorv:
+ 406              	        //addgt r5, #3                //region_v=region_v+3
+ 407              	        add r5, #3
+ 408              	        b cont2
+ 409              	menorv:
+ 410              	        //sublt r5, #3                //region_v=region_v-3
+ 411              	        sub r5, #3
+ 412              	        b cont3
+ 413              	dif7:
+ 414              	        //ADDNE r0, r0, #26            //if(r7!=0) r0=r0+26 saltamos una fila de la cuadricula en e
+ 415              	        add r0, r0, #26
+ 416              	        b cont4
+ 417              	
+ 418              	
+ 419              	
+ 420              	
+ 421              	
+ 422              	*/
+ 423              	###################################################################################################
+ 424              	.data
+ 425              	.ltorg /*guarantees the alignment*/
+ 426              	.align 5
+ 427              	
+ 428              	# huecos para cuadrar
+ 429              	cuadricula:
+ 430              	     /* 9 filas de 16 entradas para facilitar la visualizacion y 16 bits por celda */
+ 431 0000 00980068 	    .hword   0x9800,0x6800,0x0000,0x0000,0x0000,0x0000,0x7800,0x0000,0x8800,0,0,0,0,0,0,0
+ 431      00000000 
+ 431      00000000 
+ 431      00780000 
+ 431      00880000 
+ 432 0020 00880000 	    .hword   0x8800,0x0000,0x0000,0x0000,0x0000,0x4800,0x3800,0x0000,0x0000,0,0,0,0,0,0,0
+ 432      00000000 
+ 432      00000048 
+ 432      00380000 
+ 432      00000000 
+ 433 0040 00180000 	    .hword   0x1800,0x0000,0x0000,0x5800,0x0000,0x0000,0x0000,0x0000,0x0000,0,0,0,0,0,0,0
+ 433      00000058 
+ 433      00000000 
+ 433      00000000 
+ 433      00000000 
+ 434 0060 00000000 	    .hword   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x1800,0x7800,0x6800,0,0,0,0,0,0,0
+ 434      00000000 
+ 434      00000000 
+ 434      00180078 
+ 434      00680000 
+ 435 0080 00280000 	    .hword   0x2800,0x0000,0x0000,0x0000,0x9800,0x3800,0x0000,0x0000,0x5800,0,0,0,0,0,0,0
+ 435      00000000 
+ 435      00980038 
+ 435      00000000 
+ 435      00580000 
+ 436 00a0 00780000 	    .hword   0x7800,0x0000,0x8800,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0,0,0,0,0,0,0
+ 436      00880000 
+ 436      00000000 
+ 436      00000000 
+ 436      00000000 
+ 437 00c0 00000000 	    .hword   0x0000,0x0000,0x7800,0x0000,0x3800,0x2800,0x0000,0x4800,0x0000,0,0,0,0,0,0,0
+ 437      00780000 
+ 437      00380028 
+ 437      00000048 
+ 437      00000000 
+ 438 00e0 00380088 	    .hword   0x3800,0x8800,0x2800,0x1800,0x0000,0x5800,0x6800,0x0000,0x0000,0,0,0,0,0,0,0
+ 438      00280018 
+ 438      00000058 
+ 438      00680000 
+ 438      00000000 
+ 439 0100 00000048 	    .hword   0x0000,0x4800,0x1800,0x0000,0x0000,0x9800,0x5800,0x2800,0x0000,0,0,0,0,0,0,0
+ 439      00180000 
+ 439      00000098 
+ 439      00580028 
+ 439      00000000 
+ 440              	
+ 441              	.end
+DEFINED SYMBOLS
+       ../init_b.asm:7      .text:00000000 start
+       ../init_b.asm:64     .text:0000001c sudoku_recalcular_arm
+       ../init_b.asm:108    .text:00000068 sudoku_candidatos_arm
+       ../init_b.asm:31     .text:00000004 Reset_Handler
+       ../init_b.asm:11     .text:00000000 $a
+       ../init_b.asm:429    .data:00000000 cuadricula
+       ../init_b.asm:48     .text:00000018 stop
+       ../init_b.asm:71     .text:00000030 bucle_i
+       ../init_b.asm:73     .text:00000034 bucle_j
+       ../init_b.asm:122    .text:00000078 b_fila
+       ../init_b.asm:140    .text:000000a4 b_col
+       ../init_b.asm:159    .text:000000d4 b_h
+       ../init_b.asm:166    .text:000000e4 b_v
+       ../init_b.asm:182    .text:0000010c buc_reg
+       ../init_b.asm:426    .data:00000000 $d
+       ../init_b.asm:424    .text:0000014c $d
+                   .debug_aranges:0000000c $d
+
+UNDEFINED SYMBOLS
+sudoku_candidatos_thumb
+sudoku9x9

@@ -1,0 +1,39 @@
+   1              	# 1 "../prueba.asm"
+   1              	.global start
+   0              	
+   0              	
+   0              	
+   2              	.data
+   3 0000 03000000 	X: .word 0x03
+   4 0004 0A000000 	Y: .word 0x0A
+   5              	.bss
+   6 0000 00000000 	Mayor: .space 4
+   7              	.text
+   8              	start:
+   9 0000 24409FE5 	LDR R4, =X
+  10 0004 24309FE5 	LDR R3, =Y
+  11 0008 24509FE5 	LDR R5, =Mayor
+  12 000c 001094E5 	LDR R1, [R4]
+  13 0010 002093E5 	LDR R2, [R3]
+  14 0014 020051E1 	CMP R1, R2
+  15 0018 010000DA 	BLE else
+  16 001c 001085E5 	STR R1, [R5]
+  17 0020 000000EA 	B FIN
+  18 0024 002085E5 	else: STR R2, [R5]
+  19 0028 FEFFFFEA 	FIN: B .
+  20 002c 00000000 	.end...
+  20      04000000 
+  20      00000000 
+DEFINED SYMBOLS
+       ../prueba.asm:8      .text:00000000 start
+       ../prueba.asm:3      .data:00000000 X
+       ../prueba.asm:4      .data:00000004 Y
+       ../prueba.asm:6      .bss:00000000 Mayor
+       ../prueba.asm:6      .bss:00000000 $d
+       ../prueba.asm:9      .text:00000000 $a
+       ../prueba.asm:18     .text:00000024 else
+       ../prueba.asm:19     .text:00000028 FIN
+       ../prueba.asm:20     .text:0000002c $d
+                   .debug_aranges:0000000c $d
+
+NO UNDEFINED SYMBOLS

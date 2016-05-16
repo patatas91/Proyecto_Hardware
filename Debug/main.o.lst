@@ -1,0 +1,404 @@
+   1              		.cpu arm7tdmi
+   2              		.fpu softvfp
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 6
+  10              		.eabi_attribute 18, 4
+  11              		.file	"main.c"
+  21              	.Ltext0:
+  22              		.file 1 "../main.c"
+ 3748              		.align	2
+ 3749              		.global	error
+ 3751              	error:
+ 3752              	.LFB0:
+   1:../main.c     **** /*********************************************************************************************
+   2:../main.c     **** * Fichero:	main.c
+   3:../main.c     **** * Autor:
+   4:../main.c     **** * Descrip:	punto de entrada de C
+   5:../main.c     **** * Version:  <P4-ARM.timer-leds>
+   6:../main.c     **** *********************************************************************************************/
+   7:../main.c     **** 
+   8:../main.c     **** /*--- ficheros de cabecera ---*/
+   9:../main.c     **** #include "44blib.h"
+  10:../main.c     **** #include "44b.h"
+  11:../main.c     **** #include "stdio.h"
+  12:../main.c     **** #include "cabecera.h"
+  13:../main.c     **** #include "bmp.h"
+  14:../main.c     **** 
+  15:../main.c     **** /*--- funciones externas ---*/
+  16:../main.c     **** extern void timer_init();
+  17:../main.c     **** extern void timer2_Inicializar();
+  18:../main.c     **** extern void timer2_Empezar();
+  19:../main.c     **** extern void Eint4567_init();
+  20:../main.c     **** extern void D8Led_init();
+  21:../main.c     **** extern void D8Led_symbol(int value);
+  22:../main.c     **** extern void init_debugstack();
+  23:../main.c     **** extern void sudoku9x9(CELDA cuadricula[NUM_FILAS][NUM_COLUMNAS]);
+  24:../main.c     **** extern int botonPulsado();
+  25:../main.c     **** /*--- LCD ---*/
+  26:../main.c     **** extern INT8U g_auc_Ascii8x16[];
+  27:../main.c     **** extern void Lcd_Init();
+  28:../main.c     **** extern void Lcd_Clr();
+  29:../main.c     **** extern void Lcd_Active_Clr();
+  30:../main.c     **** extern void Lcd_DspAscII8x16(INT16U x0, INT16U y0, INT8U ForeColor, INT8U * s);
+  31:../main.c     **** extern void empezado(void);
+  32:../main.c     **** 
+  33:../main.c     **** CELDA cuadricula [NUM_FILAS][NUM_COLUMNAS] __attribute__ ((aligned (32)));
+  34:../main.c     **** 
+  35:../main.c     **** /*--- declaracion de funciones ---*/
+  36:../main.c     **** void Main(void);
+  37:../main.c     **** void error(void);
+  38:../main.c     **** 
+  39:../main.c     **** 
+  40:../main.c     **** /*--- codigo de funciones ---*/
+  41:../main.c     **** void error(void)
+  42:../main.c     **** {
+ 3753              		.loc 1 42 0
+ 3754              		.cfi_startproc
+ 3755              		@ Function supports interworking.
+ 3756              		@ args = 0, pretend = 0, frame = 0
+ 3757              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3758 0000 0DC0A0E1 		mov	ip, sp
+ 3759              	.LCFI0:
+ 3760              		.cfi_def_cfa_register 12
+ 3761 0004 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 3762 0008 04B04CE2 		sub	fp, ip, #4
+ 3763              		.cfi_offset 14, -8
+ 3764              		.cfi_offset 13, -12
+ 3765              		.cfi_offset 11, -16
+ 3766              	.LCFI1:
+ 3767              		.cfi_def_cfa 11, 4
+ 3768              	.L2:
+ 3769              	.LBB2:
+  43:../main.c     **** 	while (1)
+  44:../main.c     **** 	{
+  45:../main.c     **** 		leds_on();
+ 3770              		.loc 1 45 0 discriminator 1
+ 3771 000c FEFFFFEB 		bl	leds_on
+  46:../main.c     **** 		D8Led_symbol(14);
+ 3772              		.loc 1 46 0 discriminator 1
+ 3773 0010 0E00A0E3 		mov	r0, #14
+ 3774 0014 FEFFFFEB 		bl	D8Led_symbol
+ 3775              	.LBE2:
+  47:../main.c     **** 	}
+ 3776              		.loc 1 47 0 discriminator 1
+ 3777 0018 FBFFFFEA 		b	.L2
+ 3778              		.cfi_endproc
+ 3779              	.LFE0:
+ 3781              		.section	.rodata
+ 3782              		.align	2
+ 3783              	.LC0:
+ 3784 0000 2A2A2A2A 		.ascii	"*********************************\000"
+ 3784      2A2A2A2A 
+ 3784      2A2A2A2A 
+ 3784      2A2A2A2A 
+ 3784      2A2A2A2A 
+ 3785 0022 0000     		.align	2
+ 3786              	.LC1:
+ 3787 0024 2A202020 		.ascii	"*          SUDOKU 2015          *\000"
+ 3787      20202020 
+ 3787      20202053 
+ 3787      55444F4B 
+ 3787      55203230 
+ 3788 0046 0000     		.align	2
+ 3789              	.LC2:
+ 3790 0048 2A202020 		.ascii	"*         *************         *\000"
+ 3790      20202020 
+ 3790      20202A2A 
+ 3790      2A2A2A2A 
+ 3790      2A2A2A2A 
+ 3791 006a 0000     		.align	2
+ 3792              	.LC3:
+ 3793 006c 2A204665 		.ascii	"* Fernando Aliaga Ramon 610610  *\000"
+ 3793      726E616E 
+ 3793      646F2041 
+ 3793      6C696167 
+ 3793      61205261 
+ 3794 008e 0000     		.align	2
+ 3795              	.LC4:
+ 3796 0090 2A204372 		.ascii	"* Cristian Simon Moreno 611487  *\000"
+ 3796      69737469 
+ 3796      616E2053 
+ 3796      696D6F6E 
+ 3796      204D6F72 
+ 3797 00b2 0000     		.align	2
+ 3798              	.LC5:
+ 3799 00b4 2A202020 		.ascii	"*                               *\000"
+ 3799      20202020 
+ 3799      20202020 
+ 3799      20202020 
+ 3799      20202020 
+ 3800 00d6 0000     		.align	2
+ 3801              	.LC6:
+ 3802 00d8 20202020 		.ascii	"         Instrucciones:         \000"
+ 3802      20202020 
+ 3802      20496E73 
+ 3802      74727563 
+ 3802      63696F6E 
+ 3803 00f9 000000   		.align	2
+ 3804              	.LC7:
+ 3805 00fc 55736520 		.ascii	"Use el boton izquiero para aumentar\000"
+ 3805      656C2062 
+ 3805      6F746F6E 
+ 3805      20697A71 
+ 3805      75696572 
+ 3806              		.align	2
+ 3807              	.LC8:
+ 3808 0120 20656C20 		.ascii	" el numero de filas/columnas/valor,\000"
+ 3808      6E756D65 
+ 3808      726F2064 
+ 3808      65206669 
+ 3808      6C61732F 
+ 3809              		.align	2
+ 3810              	.LC9:
+ 3811 0144 70756C73 		.ascii	"pulse el boton derecho para confirmar.\000"
+ 3811      6520656C 
+ 3811      20626F74 
+ 3811      6F6E2064 
+ 3811      65726563 
+ 3812 016b 00       		.align	2
+ 3813              	.LC10:
+ 3814 016c 50617261 		.ascii	"Para finalizar introduzca la fila A\000"
+ 3814      2066696E 
+ 3814      616C697A 
+ 3814      61722069 
+ 3814      6E74726F 
+ 3815              		.align	2
+ 3816              	.LC11:
+ 3817 0190 2A2A5075 		.ascii	"**Pulse un boton para empezar**\000"
+ 3817      6C736520 
+ 3817      756E2062 
+ 3817      6F746F6E 
+ 3817      20706172 
+ 3818              		.text
+ 3819              		.align	2
+ 3820              		.global	Main
+ 3822              	Main:
+ 3823              	.LFB1:
+  48:../main.c     **** }
+  49:../main.c     **** 
+  50:../main.c     **** void Main(void)
+  51:../main.c     **** {
+ 3824              		.loc 1 51 0
+ 3825              		.cfi_startproc
+ 3826              		@ Function supports interworking.
+ 3827              		@ args = 0, pretend = 0, frame = 0
+ 3828              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3829 001c 0DC0A0E1 		mov	ip, sp
+ 3830              	.LCFI2:
+ 3831              		.cfi_def_cfa_register 12
+ 3832 0020 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 3833 0024 04B04CE2 		sub	fp, ip, #4
+ 3834              		.cfi_offset 14, -8
+ 3835              		.cfi_offset 13, -12
+ 3836              		.cfi_offset 11, -16
+ 3837              	.LCFI3:
+ 3838              		.cfi_def_cfa 11, 4
+  52:../main.c     **** 
+  53:../main.c     **** 	/* Inicializa controladores */
+  54:../main.c     **** 	sys_init();        // Inicializacion de la placa, interrupciones y puertos
+ 3839              		.loc 1 54 0
+ 3840 0028 FEFFFFEB 		bl	sys_init
+  55:../main.c     **** 	timer_init();	   // Inicializacion del temporizador
+ 3841              		.loc 1 55 0
+ 3842 002c FEFFFFEB 		bl	timer_init
+  56:../main.c     **** 	timer2_Inicializar();
+ 3843              		.loc 1 56 0
+ 3844 0030 FEFFFFEB 		bl	timer2_Inicializar
+  57:../main.c     **** 	timer2_Empezar();
+ 3845              		.loc 1 57 0
+ 3846 0034 FEFFFFEB 		bl	timer2_Empezar
+  58:../main.c     **** 	Eint4567_init();	// inicializamos los pulsadores. Cada vez que se pulse se verá reflejado en el 8l
+ 3847              		.loc 1 58 0
+ 3848 0038 FEFFFFEB 		bl	Eint4567_init
+  59:../main.c     **** 	D8Led_init(); // inicializamos el 8led
+ 3849              		.loc 1 59 0
+ 3850 003c FEFFFFEB 		bl	D8Led_init
+  60:../main.c     **** 	init_debugstack();
+ 3851              		.loc 1 60 0
+ 3852 0040 FEFFFFEB 		bl	init_debugstack
+  61:../main.c     **** 
+  62:../main.c     **** 	/* LCD */
+  63:../main.c     **** 	Lcd_Init();
+ 3853              		.loc 1 63 0
+ 3854 0044 FEFFFFEB 		bl	Lcd_Init
+  64:../main.c     **** 	Lcd_Clr();
+ 3855              		.loc 1 64 0
+ 3856 0048 FEFFFFEB 		bl	Lcd_Clr
+  65:../main.c     **** 	Lcd_Active_Clr();
+ 3857              		.loc 1 65 0
+ 3858 004c FEFFFFEB 		bl	Lcd_Active_Clr
+  66:../main.c     **** 	// Pintar autores/instrucciones
+  67:../main.c     **** 	Lcd_DspAscII8x16(28,5,BLACK,"*********************************");
+ 3859              		.loc 1 67 0
+ 3860 0050 1C00A0E3 		mov	r0, #28
+ 3861 0054 0510A0E3 		mov	r1, #5
+ 3862 0058 0F20A0E3 		mov	r2, #15
+ 3863 005c 18319FE5 		ldr	r3, .L6
+ 3864 0060 FEFFFFEB 		bl	Lcd_DspAscII8x16
+  68:../main.c     **** 	Lcd_DspAscII8x16(28,20,BLACK,"*          SUDOKU 2015          *");
+ 3865              		.loc 1 68 0
+ 3866 0064 1C00A0E3 		mov	r0, #28
+ 3867 0068 1410A0E3 		mov	r1, #20
+ 3868 006c 0F20A0E3 		mov	r2, #15
+ 3869 0070 08319FE5 		ldr	r3, .L6+4
+ 3870 0074 FEFFFFEB 		bl	Lcd_DspAscII8x16
+  69:../main.c     **** 	Lcd_DspAscII8x16(28,35,BLACK,"*         *************         *");
+ 3871              		.loc 1 69 0
+ 3872 0078 1C00A0E3 		mov	r0, #28
+ 3873 007c 2310A0E3 		mov	r1, #35
+ 3874 0080 0F20A0E3 		mov	r2, #15
+ 3875 0084 F8309FE5 		ldr	r3, .L6+8
+ 3876 0088 FEFFFFEB 		bl	Lcd_DspAscII8x16
+  70:../main.c     **** 	Lcd_DspAscII8x16(28,50,BLACK,"* Fernando Aliaga Ramon 610610  *");
+ 3877              		.loc 1 70 0
+ 3878 008c 1C00A0E3 		mov	r0, #28
+ 3879 0090 3210A0E3 		mov	r1, #50
+ 3880 0094 0F20A0E3 		mov	r2, #15
+ 3881 0098 E8309FE5 		ldr	r3, .L6+12
+ 3882 009c FEFFFFEB 		bl	Lcd_DspAscII8x16
+  71:../main.c     **** 	Lcd_DspAscII8x16(28,65,BLACK,"* Cristian Simon Moreno 611487  *");
+ 3883              		.loc 1 71 0
+ 3884 00a0 1C00A0E3 		mov	r0, #28
+ 3885 00a4 4110A0E3 		mov	r1, #65
+ 3886 00a8 0F20A0E3 		mov	r2, #15
+ 3887 00ac D8309FE5 		ldr	r3, .L6+16
+ 3888 00b0 FEFFFFEB 		bl	Lcd_DspAscII8x16
+  72:../main.c     **** 	Lcd_DspAscII8x16(28,80,BLACK,"*                               *");
+ 3889              		.loc 1 72 0
+ 3890 00b4 1C00A0E3 		mov	r0, #28
+ 3891 00b8 5010A0E3 		mov	r1, #80
+ 3892 00bc 0F20A0E3 		mov	r2, #15
+ 3893 00c0 C8309FE5 		ldr	r3, .L6+20
+ 3894 00c4 FEFFFFEB 		bl	Lcd_DspAscII8x16
+  73:../main.c     **** 	Lcd_DspAscII8x16(28,95,BLACK,"*********************************");
+ 3895              		.loc 1 73 0
+ 3896 00c8 1C00A0E3 		mov	r0, #28
+ 3897 00cc 5F10A0E3 		mov	r1, #95
+ 3898 00d0 0F20A0E3 		mov	r2, #15
+ 3899 00d4 A0309FE5 		ldr	r3, .L6
+ 3900 00d8 FEFFFFEB 		bl	Lcd_DspAscII8x16
+  74:../main.c     **** 	Lcd_DspAscII8x16(28,115,BLACK,"         Instrucciones:         ");
+ 3901              		.loc 1 74 0
+ 3902 00dc 1C00A0E3 		mov	r0, #28
+ 3903 00e0 7310A0E3 		mov	r1, #115
+ 3904 00e4 0F20A0E3 		mov	r2, #15
+ 3905 00e8 A4309FE5 		ldr	r3, .L6+24
+ 3906 00ec FEFFFFEB 		bl	Lcd_DspAscII8x16
+  75:../main.c     **** 	Lcd_DspAscII8x16(18,135,BLACK,"Use el boton izquiero para aumentar");
+ 3907              		.loc 1 75 0
+ 3908 00f0 1200A0E3 		mov	r0, #18
+ 3909 00f4 8710A0E3 		mov	r1, #135
+ 3910 00f8 0F20A0E3 		mov	r2, #15
+ 3911 00fc 94309FE5 		ldr	r3, .L6+28
+ 3912 0100 FEFFFFEB 		bl	Lcd_DspAscII8x16
+  76:../main.c     **** 	Lcd_DspAscII8x16(18,150,BLACK," el numero de filas/columnas/valor,");
+ 3913              		.loc 1 76 0
+ 3914 0104 1200A0E3 		mov	r0, #18
+ 3915 0108 9610A0E3 		mov	r1, #150
+ 3916 010c 0F20A0E3 		mov	r2, #15
+ 3917 0110 84309FE5 		ldr	r3, .L6+32
+ 3918 0114 FEFFFFEB 		bl	Lcd_DspAscII8x16
+  77:../main.c     **** 	Lcd_DspAscII8x16(10,165,BLACK,"pulse el boton derecho para confirmar.");
+ 3919              		.loc 1 77 0
+ 3920 0118 0A00A0E3 		mov	r0, #10
+ 3921 011c A510A0E3 		mov	r1, #165
+ 3922 0120 0F20A0E3 		mov	r2, #15
+ 3923 0124 74309FE5 		ldr	r3, .L6+36
+ 3924 0128 FEFFFFEB 		bl	Lcd_DspAscII8x16
+  78:../main.c     **** 	Lcd_DspAscII8x16(18,180,BLACK,"Para finalizar introduzca la fila A");
+ 3925              		.loc 1 78 0
+ 3926 012c 1200A0E3 		mov	r0, #18
+ 3927 0130 B410A0E3 		mov	r1, #180
+ 3928 0134 0F20A0E3 		mov	r2, #15
+ 3929 0138 64309FE5 		ldr	r3, .L6+40
+ 3930 013c FEFFFFEB 		bl	Lcd_DspAscII8x16
+  79:../main.c     **** 	Lcd_DspAscII8x16(35,205,BLACK,"**Pulse un boton para empezar**");
+ 3931              		.loc 1 79 0
+ 3932 0140 2300A0E3 		mov	r0, #35
+ 3933 0144 CD10A0E3 		mov	r1, #205
+ 3934 0148 0F20A0E3 		mov	r2, #15
+ 3935 014c 54309FE5 		ldr	r3, .L6+44
+ 3936 0150 FEFFFFEB 		bl	Lcd_DspAscII8x16
+  80:../main.c     **** 	Lcd_Dma_Trans();
+ 3937              		.loc 1 80 0
+ 3938 0154 FEFFFFEB 		bl	Lcd_Dma_Trans
+  81:../main.c     **** 
+  82:../main.c     **** 
+  83:../main.c     **** 
+  84:../main.c     **** 	//unsigned int tiempo = timer2_Leer();
+  85:../main.c     **** 	//Delay(1000000);
+  86:../main.c     **** 	//unsigned int tiempo2 = timer2_Leer() - tiempo;
+  87:../main.c     **** 
+  88:../main.c     **** 
+  89:../main.c     **** 	// Bucle infinito para iniciar partida cada vez que finalice la anterior
+  90:../main.c     **** 	while(1) {
+  91:../main.c     **** 		while (botonPulsado() == 0);
+ 3939              		.loc 1 91 0
+ 3940 0158 0000A0E1 		mov	r0, r0	@ nop
+ 3941              	.L4:
+ 3942              		.loc 1 91 0 is_stmt 0 discriminator 1
+ 3943 015c FEFFFFEB 		bl	botonPulsado
+ 3944 0160 0030A0E1 		mov	r3, r0
+ 3945 0164 000053E3 		cmp	r3, #0
+ 3946 0168 FBFFFF0A 		beq	.L4
+  92:../main.c     **** 		sudoku9x9(cuadricula);
+ 3947              		.loc 1 92 0 is_stmt 1
+ 3948 016c 38009FE5 		ldr	r0, .L6+48
+ 3949 0170 FEFFFFEB 		bl	sudoku9x9
+  93:../main.c     **** 	}
+ 3950              		.loc 1 93 0
+ 3951 0174 0000A0E1 		mov	r0, r0	@ nop
+  91:../main.c     **** 		while (botonPulsado() == 0);
+ 3952              		.loc 1 91 0
+ 3953 0178 F7FFFFEA 		b	.L4
+ 3954              	.L7:
+ 3955              		.align	2
+ 3956              	.L6:
+ 3957 017c 00000000 		.word	.LC0
+ 3958 0180 24000000 		.word	.LC1
+ 3959 0184 48000000 		.word	.LC2
+ 3960 0188 6C000000 		.word	.LC3
+ 3961 018c 90000000 		.word	.LC4
+ 3962 0190 B4000000 		.word	.LC5
+ 3963 0194 D8000000 		.word	.LC6
+ 3964 0198 FC000000 		.word	.LC7
+ 3965 019c 20010000 		.word	.LC8
+ 3966 01a0 44010000 		.word	.LC9
+ 3967 01a4 6C010000 		.word	.LC10
+ 3968 01a8 90010000 		.word	.LC11
+ 3969 01ac 00000000 		.word	cuadricula
+ 3970              		.cfi_endproc
+ 3971              	.LFE1:
+ 3973              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 main.c
+                            *COM*:00000120 cuadricula
+C:\Users\guest\AppData\Local\Temp\ccaQEuMB.s:3748   .text:00000000 $a
+C:\Users\guest\AppData\Local\Temp\ccaQEuMB.s:3751   .text:00000000 error
+C:\Users\guest\AppData\Local\Temp\ccaQEuMB.s:3782   .rodata:00000000 $d
+C:\Users\guest\AppData\Local\Temp\ccaQEuMB.s:3822   .text:0000001c Main
+C:\Users\guest\AppData\Local\Temp\ccaQEuMB.s:3957   .text:0000017c $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+leds_on
+D8Led_symbol
+sys_init
+timer_init
+timer2_Inicializar
+timer2_Empezar
+Eint4567_init
+D8Led_init
+init_debugstack
+Lcd_Init
+Lcd_Clr
+Lcd_Active_Clr
+Lcd_DspAscII8x16
+Lcd_Dma_Trans
+botonPulsado
+sudoku9x9
